@@ -80,18 +80,24 @@ for i, match in enumerate(live_matches):
     odds = odds.text
     if odds.count("\n") == 2:
         oddlist = odds.split("\n")
-        odds_1 = float(oddlist[0]) if oddlist[0] != "-" else 0
-        odds_x = float(oddlist[1]) if oddlist[1] != "-" else 0
-        odds_2 = float(oddlist[2]) if oddlist[2] != "-" else 0
+        odds_1 = float(oddlist[0]) if oddlist[0] != "-" else float('inf')
+        odds_x = float(oddlist[1]) if oddlist[1] != "-" else float('inf')
+        odds_2 = float(oddlist[2]) if oddlist[2] != "-" else float('inf')
     else:
         oddlist = odds.split("\n")
-        odds_1 = float(oddlist[0]) if oddlist[0] != "-" else 0
-        odds_x = 0
-        odds_2 = float(oddlist[1]) if oddlist[1] != "-" else 0
+        odds_1 = float(oddlist[0]) if oddlist[0] != "-" else float('inf')
+        odds_x = float('inf')
+        odds_2 = float(oddlist[1]) if oddlist[1] != "-" else float('inf')
 
     match_object = Match(hteam_labels, ateam_labels, hteam_scores, ateam_scores, odds_1, odds_x, odds_2)
     match_array.append(match_object)
 
+print(f"Total Matches: {len(live_matches)}")
+
 for match in match_array:
     if match.odd_1<1.3 or match.odd_2<1.3 or match.odd_x<1.2:
         print(match.home_team,match.odd_1,match.odd_x,match.odd_2)
+
+
+time.sleep(5)
+driver.quit()
