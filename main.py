@@ -3,7 +3,7 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 import pandas as pd
 import os
-import time
+import datetime
 from selenium.webdriver.support import expected_conditions as EC
 
 options = Options()
@@ -55,7 +55,7 @@ def filter_for_ongoing():
 
 def save_csv_to_file(arr, file_name):
     arr = pd.DataFrame(arr)
-    csv_file_path = f'C:\\Users\\Techron\\PycharmProjects\\AeroBet\{file_name}'
+    csv_file_path = f'C:\\Users\\Techron\\PycharmProjects\\LiveBetAssist\\{file_name}'
 
     if not os.path.exists(csv_file_path):
         arr.to_csv(csv_file_path)
@@ -63,6 +63,27 @@ def save_csv_to_file(arr, file_name):
         arr.to_csv(csv_file_path, mode='a', header=False) #append to the end
 
     print("Saved to csv file")
+
+
+def recording_time():
+    current_datetime = datetime.datetime.now()
+
+    # Format the date and time as a string
+    r_date = current_datetime.strftime("%Y-%m-%d")
+    r_rtime = current_datetime.strftime("%H:%M:%S")
+
+    return r_date,r_rtime
+
+
+def selection_algorithm(game_obj):
+    if game_obj.odd_1 < 1.3:
+        return game_obj.home_team
+    elif game_obj.odd_x < 1.3:
+        return "X"
+    elif game_obj.odd_2 < 1.3:
+        return game_obj.away_team
+    else:
+        return "N/A"
 
 
 def main():
@@ -91,7 +112,8 @@ def main():
 
         # separate the odds
         odds = match.find_element(By.XPATH, ".//div[@class='live-match__odds__container']")
-           #obtain the individual divs so that we can use the buttons for odd placing
+
+        #obtain the individual divs so that we can use the buttons for odd placing
         if odds.text.count("\n") == 2:
             oddlist = odds.text.split("\n")
             odds_1 = float(oddlist[0]) if oddlist[0] != "-" else float('inf')
@@ -105,16 +127,18 @@ def main():
 
         match_object = Match(hteam_labels, ateam_labels, hteam_scores, ateam_scores, odds_1, odds_x, odds_2)
         match_array.append(match_object)
-        games.append({"Home":hteam_labels,"Away":ateam_labels,"1":odds_1,"X":odds_x,"2":odds_2,"Expected Win":})
+        games.append({"Date":recording_time()[0],"Time":recording_time()[1],"Home":hteam_labels,"Away":ateam_labels,"1":odds_1,"X":odds_x,"2":odds_2,"Expected Winner":selection_algorithm(match_object)})
 
+    print(games)
     print(f"Total Matches: {len(live_matches)}")
+    save_csv_to_file(games,"dryrun.csv")
 
 
-    eligible = 0
-    for match in match_array:
-        if match.odd_1<1.3:# or match.odd_2<1.3 or match.odd_x<1.2:
-            print(match.home_team,match.odd_1,match.odd_x,match.odd_2)
-            eligible+=1
-    print(eligible)
+
+main()
+
+
+driver.quit()
+
 
 
