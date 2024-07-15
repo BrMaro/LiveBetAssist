@@ -9,6 +9,7 @@ import pandas as pd
 import os
 import datetime
 import pprint
+import json
 from dotenv import load_dotenv
 
 options = Options()
@@ -63,10 +64,18 @@ def save_csv_to_file(arr, file_name):
     print("Saved to csv file")
 
 
+def save_json_to_file(data, file_name):
+    json_file_path = os.path.join(os.path.dirname(__file__), file_name)
+
+    with open(json_file_path, 'w') as json_file:
+        json.dump(data, json_file, indent=4)
+
+    print("Saved to json file")
+
+
 def recording_time():
     current_datetime = datetime.datetime.now()
 
-    # Format the date and time as a string
     r_date = current_datetime.strftime("%Y-%m-%d")
     r_rtime = current_datetime.strftime("%H:%M:%S")
 
