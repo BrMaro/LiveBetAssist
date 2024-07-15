@@ -4,6 +4,7 @@ from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.alert import Alert
 import pandas as pd
 import os
 import datetime
@@ -50,9 +51,9 @@ def filter_for_ongoing():
     apply.click()
 
 
-def save_csv_to_file(arr, file_name):
+def save_to_csv_file(arr, file_name):
     arr = pd.DataFrame(arr)
-    csv_file_path = f'C:\\Users\\Techron\\PycharmProjects\\LiveBetAssist\\{file_name}'
+    csv_file_path =
 
     if not os.path.exists(csv_file_path):
         arr.to_csv(csv_file_path)
@@ -76,28 +77,36 @@ def recording_time():
 # as small slips as possible max(3-4)
 # should reach at least 2x odds
 #they should not be equal to avoid chances of draws
-def selection_algorithm(game_obj):
-    # if game_obj.odd_1 < 1.3:
-    #     return game_obj.home_team
-    # elif game_obj.odd_x < 1.3:
-    #     return "X"
-    # elif game_obj.odd_2 < 1.3:
-    #     return game_obj.away_team
-    # else:
-    #     return "N/A"
-
-    # Consider games with 3 odds
-    if game_obj.odd_1 is not float('inf') and game_obj.odd_x is not float('inf') and game_obj.odd_2 is not float('inf'):
-        # If either odd is less than 2 and the others are above 3
-        if game_obj.odd_1 < 2 and game_obj.odd_x > 3 and game_obj.odd_2 > 3:
-            return game_obj.home_team
-        if game_obj.odd_2 < 2 and game_obj.odd_1 > 3 and game_obj.odd_x > 3:
-            return game_obj.away_team
-        if game_obj.odd_x < 2 and game_obj.odd_2 > 3 and game_obj.odd_1 > 3:
-            return "Draw"
+def selection_algorithm(match):
+    # for match in matches:
+    if match["odd_no"] == 2:
+        if match['home_team']['odds'] == '-' or match['away_team']['odds'] == '-':
+            return None
+        if match['home_team']['score'] > match['away_team']['score']:
+            if match['home_team']['odds'] > (match['away_team']['odds'] + 1.5):
+                return match['home_team']
+        elif match['away_team']['score'] > match['home_team']['score']:
+            if match['away_team']['odds'] > (match['home_team']['odds'] + 1.5):
+                return match['away_team']
+        else:
+            if match['away_team']['odds'] > (match['home_team']['odds'] + 2):
+                return match['away_team']
+            if match['home_team']['odds'] > (match['away_team']['odds'] + 2):
+                return match['home_team']
+    else:
+        if match['home_team']['odds'] == '-' or match['away_team']['odds'] == '-' or match['odd_x'] == '-':
+            return None
+        pass
 
 
 def place_bet(bet_amount):
+    remove_all_btn = driver.find_element(By.CLASS_NAME, "button__title")
+    remove_all_btn.click()
+
+    alert = wait.until(EC.alert_is_present())
+    alert = Alert(driver)
+    alert.accept()
+
     betslip = driver.find_element(By.XPATH, "//div[@class='betslip']")
     expected_odds = driver.find_element(By.XPATH, "//span[@='betslip__details__row__value']")
 
@@ -117,7 +126,7 @@ def main():
     games = []
     match_array = []
     for i, match in enumerate(live_matches):
-        match_data = {}
+        match_data = {'home_team': {}, 'away_team': {}}
         teams = match.find_element(By.XPATH, ".//div[@class='live-match__teams']")
         # Separate the two teams and store the teams and scores
         hteam = teams.text.split("\n")[0]
@@ -127,16 +136,16 @@ def main():
         hteam_scores = hteam[:index_of_first_letter]
         hteam_labels = hteam[index_of_first_letter:]
 
-        match_data['home_team_scores'] = hteam_scores
-        match_data['home_team'] = hteam_labels
+        match_data['home_team']['name'] = hteam_labels
+        match_data['home_team']['score'] = hteam_scores
 
         ateam = teams.text.split("\n")[1]
         index_of_first_letter = next((i for i, char in enumerate(ateam) if not char.isdigit()), len(ateam))
         ateam_scores = ateam[:index_of_first_letter]
         ateam_labels = ateam[index_of_first_letter:]
 
-        match_data['away_team_scores'] = ateam_scores
-        match_data['away_team'] = ateam_labels
+        match_data['away_team']['name'] = ateam_labels
+        match_data['away_team']['score'] = ateam_scores
 
         # separate the odds
         odds = match.find_element(By.XPATH, ".//div[@class='live-match__odds__container']")
@@ -149,29 +158,30 @@ def main():
             odds_2 = float(oddlist[2]) if oddlist[2] != "-" else "-"
 
             match_data['odd_no'] = 3
-            match_data['odd_1'] = odds_1
+            match_data['home_team']['odds'] = odds_1
+            match_data['away_team']['odds'] = odds_2
             match_data['odd_x'] = odds_x
-            match_data['odd_2'] = odds_2
+
 
         else:
             oddlist = odds.text.split("\n")
-            odds_1 = float(oddlist[0]) if oddlist[0] != "-" else float('inf')
-            odds_2 = float(oddlist[1]) if oddlist[1] != "-" else float('inf')
+            odds_1 = float(oddlist[0]) if oddlist[0] != "-" else "-"
+            odds_2 = float(oddlist[1]) if oddlist[1] != "-" else "-"
 
             match_data['odd_no'] = 2
-            match_data['odd_1'] = odds_1
-            match_data['odd_2'] = odds_2
+            match_data['home_team']['odds'] = odds_1
+            match_data['away_team']['odds'] = odds_2
+            match_data['expected_winner'] = selection_algorithm(match_data)
 
         match_array.append(match_data)
-        # games.append(
-        #     {"Date": recording_time()[0], "Time": recording_time()[1], "Home": hteam_labels, "Away": ateam_labels,
-        #      "1": odds_1, "X": odds_x, "2": odds_2, "Expected Winner": selection_algorithm(match_data)})
 
-    pprint.pprint(match_array)
-    print(f"Total Matches: {len(live_matches)}")
+    pprint.pprint(match_array, sort_dicts=False)
+    predictions = []
+    for match in match_array:
+        if 'expected_winner' in match and match['expected_winner'] is not None:
+            predictions.append(match['expected_winner'])
 
-    # save_csv_to_file(games, "dryrun.csv")
-
+    print(f"Total matches: {len(match_array)}  Predictions: {len(predictions)}")
 
 main()
 
