@@ -51,14 +51,14 @@ def filter_for_ongoing():
     apply.click()
 
 
-def save_to_csv_file(arr, file_name):
+def save_csv_to_file(arr, file_name):
     arr = pd.DataFrame(arr)
-    csv_file_path =
+    csv_file_path = str(os.path.join(os.path.dirname(__file__), file_name))
 
     if not os.path.exists(csv_file_path):
         arr.to_csv(csv_file_path)
     else:
-        arr.to_csv(csv_file_path, mode='a', header=False)  #append to the end
+        arr.to_csv(csv_file_path, mode='a', header=False)
 
     print("Saved to csv file")
 
@@ -180,6 +180,8 @@ def main():
     for match in match_array:
         if 'expected_winner' in match and match['expected_winner'] is not None:
             predictions.append(match['expected_winner'])
+
+    save_csv_to_file(match_array,'test.csv')
 
     print(f"Total matches: {len(match_array)}  Predictions: {len(predictions)}")
 
